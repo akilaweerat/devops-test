@@ -24,7 +24,6 @@ services:
       MYSQL_DATABASE: targets
       MYSQL_USER: targets
       MYSQL_PASSWORD: password
-    command: --default-authentication-plugin=mysql_native_password
     volumes:
       - ./seed:/docker-entrypoint-initdb.d
     ports:

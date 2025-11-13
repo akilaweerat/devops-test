@@ -11,5 +11,5 @@ CREATE TABLE `targets` (
 
 
 INSERT INTO `targets` (`target`, `tag`) VALUES
-("https://www.booli.se", 'prod,https'),
-("https://api.booli.se", 'prod,api,https');
+("https://www.target.se", 'prod,https'),
+("https://api.target.se", 'prod,api,https');

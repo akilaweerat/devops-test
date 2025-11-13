@@ -9,6 +9,11 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 
+#base
+RUN apt update && apt-get install -y curl openssh-server 
+#deps 
+RUN apt update && apt-get install -y default-jre
+
 EXPOSE 80
 
 # Start server
