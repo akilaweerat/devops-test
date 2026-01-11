@@ -1,0 +1,13 @@
+
+namespace: booli-targets
+
+# MySQL configuration
+mysql:
+  host: "mysql"
+  rootPassword: rootpassword # Default for dev, override in production
+  database: targets
+  user: targets
+  password: passwords  # Default for dev, override in production
+
+app:
+  id: "app-instance-1"

@@ -1,11 +1,41 @@
 
-## 🚀 DevOps Challenge: Productionize an Application
+## 🚀 DevOps Challenge: Productionize an Application - Solution
 
-This is a test of your skills in **Docker, Kubernetes (k8s), and DevOps**.
 
-### Your Starting Point
+### Optimizations
 
-You are given a basic application that is already working and can be started using `docker-compose`.
+Updated dockerfile to use official python image and removed unnecessary dependencies
+
+#### k8s manifest changes
+Fix syntax errors in k8s manifest files (values -> value)
+changed incorrect port in healthcheck
+fixed image name
+fixed deployment strategy to rollingupdate
+fix resource allocations
+
+### Setting Up
+
+Create a docker image out of the application. This will create the docker image booli-targets:1.0
+
+Note - docker daemon should be running
+
+```
+chmod +x build.sh
+./build.sh
+```
+
+Then we should load the image to the k8s cluster image repo. For minikube use
+
+```
+minikube image load booli-targets:1.0
+```
+
+We can now deploy helm charts to the k8s cluster
+
+```
+cd helm-charts
+helm install booli-targets .
+```
 
 ---
 

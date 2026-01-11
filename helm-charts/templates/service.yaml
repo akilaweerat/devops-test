@@ -1,0 +1,33 @@
+# mysql service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: booli-targets
+spec:
+  ports:
+  - port: 3306
+    name: mysql
+    targetPort: 3306
+  selector:
+    app: mysql
+  type: ClusterIP
+
+--- 
+
+# booli targets service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: booli-targets
+  namespace: booli-targets
+spec:
+  ports:
+  - port: 80
+    name: http
+    targetPort: 80
+  selector:
+    app: booli-targets
+  type: ClusterIP
