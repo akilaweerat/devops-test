@@ -132,8 +132,8 @@ spec:
             secretKeyRef:
               name: mysql-secret
               key: mysql-password
-        image: booli-targets:1.0
-        imagePullPolicy: Never # since we are using a local image
+        image: {{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}
+        imagePullPolicy: {{ .Values.app.image.pullPolicy }}
         ports:
         - containerPort: 80
           protocol: TCP

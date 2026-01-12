@@ -11,3 +11,7 @@ mysql:
 
 app:
   id: "app-instance-1"
+  image:
+    repository: booli-targets
+    tag: "1.0"
+    pullPolicy: Never
