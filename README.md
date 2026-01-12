@@ -17,35 +17,40 @@ Updated dockerfile to use official python image and removed unnecessary dependen
 
 ### Setting Up
 
-Create a docker image out of the application. This will create the docker image booli-targets:1.0
--
-Note - docker daemon should be running
+Create a docker image out of the application. This will create the docker image `booli-targets:1.0`.
 
-```
+> **Note:** Docker daemon should be running
+
+```bash
 docker build -t booli-targets:1.0 .
 ```
 
-Then we should load the image to the k8s cluster image repo. For minikube use
+Then we should load the image to the k8s cluster image repo. For minikube use:
 
-```
+```bash
 minikube image load booli-targets:1.0
 ```
 
-We can now deploy helm charts to the k8s cluster
+We can now deploy helm charts to the k8s cluster:
 
-```
+```bash
 cd helm-charts
 helm install booli-targets .
 ```
 
 ---
 
-### CI/CD strategy
+### CI/CD Strategy
 
-For branches and merge requests we only run build, unit tests and linting tasks to code builds properly
+**For branches and merge requests:**
+- Build, unit tests, and linting tasks to ensure code builds properly
 
-For master branch additional steps are added to build the docker image, scan the docker image and code
-for security flaws (via sonarqube and trivy). Helm chart is also built and packaged and master branch
-can be deployed to QA environment
+**For master branch:**
+- Additional steps are added to build the docker image
+- Scan the docker image and code for security flaws (via SonarQube and Trivy)
+- Helm chart is built and packaged
+- Master branch can be deployed to QA environment
 
-only tags can be deployed to stage and production and they can only be manually triggered
+**For tags:**
+- Only tags can be deployed to stage and production
+- Deployments can only be manually triggered
