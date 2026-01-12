@@ -1,0 +1,174 @@
+# mysql deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: {{ .Values.namespace }}
+spec:
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-root-password
+        - name: MYSQL_DATABASE
+          value:  {{ .Values.mysql.database | quote }}
+        - name: MYSQL_USER
+          value: {{ .Values.mysql.user | quote }}
+        - name: MYSQL_PASSWORD
+          value: {{ .Values.mysql.password | quote }}
+        image: mysql:8.0
+        args: ['--default-authentication-plugin=mysql_native_password']
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+      - name: mysql-seed
+        image: mysql:8.0
+        command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for MySQL to be ready on localhost..."
+            # Wait for MySQL to accept connections on localhost (retry with exponential backoff)
+            max_attempts=60
+            attempt=0
+            while [ $attempt -lt $max_attempts ]; do
+              if mysql -h 127.0.0.1 \
+                       -uroot \
+                       -p$MYSQL_ROOT_PASSWORD \
+                       -e "SELECT 1" &>/dev/null 2>&1; then
+                echo "MySQL is ready! Seeding database..."
+                mysql -h 127.0.0.1 \
+                      -uroot \
+                      -p$MYSQL_ROOT_PASSWORD \
+                      {{ .Values.mysql.database }} \
+                      < /seed/seed.sql
+                if [ $? -eq 0 ]; then
+                  echo "Database seeded successfully!"
+                  # Keep container running to prevent pod restart
+                  sleep infinity
+                else
+                  echo "Failed to seed database, exiting..."
+                  exit 1
+                fi
+                break
+              else
+                attempt=$((attempt + 1))
+                echo "MySQL not ready yet (attempt $attempt/$max_attempts), waiting..."
+                sleep 2
+              fi
+            done
+            if [ $attempt -eq $max_attempts ]; then
+              echo "Timeout waiting for MySQL to be ready!"
+              exit 1
+            fi
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: {{ .Values.mysql.rootPassword | quote }}
+        volumeMounts:
+        - name: seed
+          mountPath: /seed
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+      - name: seed
+        configMap:
+          name: mysql-seed
+---
+
+# booli targets deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booli-targets
+  namespace: {{ .Values.namespace }}
+spec:
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: booli-targets
+  template:
+    metadata:
+      labels:
+        app: booli-targets
+    spec:
+      containers:
+      - name: booli-targets
+        env:
+        - name: ID
+          value: {{ .Values.app.id | quote }}
+        - name: MYSQL_HOST
+          value: {{ .Values.mysql.host | quote }}
+        - name: MYSQL_DATABASE
+          value:  {{ .Values.mysql.database | quote }}
+        - name: MYSQL_USER
+          value: {{ .Values.mysql.user | quote }}
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password
+        image: {{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}
+        imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 80
+            scheme: HTTP
+          failureThreshold: 30
+          periodSeconds: 10
+          timeoutSeconds: 10
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ready
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
